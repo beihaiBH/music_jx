@@ -6,22 +6,91 @@
 ## 🚀 项目简介
 本工具用于解析音乐真实链接，获取音乐的详细信息，如音乐地址、封面图、作者信息等。
 
-## 功能特点
+## ✨ 功能特点
 - 支持多种音乐平台的链接解析
-- 快速获取音乐相关信息
+  - 🎵 网易云音乐（163music.php）
+  - 🎶 酷我音乐（kuwo.php）
+  - 🎧 汽水音乐（qsmusic.php + dymusic.php）
+- 支持三种输入方式：**完整链接** · **复制的分享文本**（自动提取链接）· **纯歌曲ID**
+- 自动识别平台并切换解析通道
 - 返回结构化的 JSON 数据
+- 提供可直接访问的聚合解析页面（index.php），支持在线播放、下载、复制链接、复制 JSON、歌词滚动/完整展示
+
+## 🖥️ 解析平台页面（index.php）
+
+项目内置一个开箱即用的**聚合解析网页**，无需额外部署即可使用。
+
+![解析平台页面演示](demo.jpg)
+
+### 页面功能
+- **平台选择**：顶部三张卡片（网易云音乐 / 酷我音乐 / 汽水音乐），点击即可切换当前解析平台
+- **输入解析**：粘贴链接或分享文本，或输入纯歌曲 ID，点击「解析」按钮
+- **自动识别**：粘贴任意平台链接时自动识别并切换对应平台
+- **歌曲展示**：封面、歌名、歌手、专辑、音质、大小、平台
+- **在线播放**：内置音频播放器，直接试听
+- **快捷操作**：下载音频 / 复制音频链接 / 复制解析 JSON
+- **歌词**：支持滚动歌词与完整歌词两种视图
+
+### 页面截图说明
+上图为页面实际运行效果（粉蓝渐变主题）：顶部为三个平台卡片，中部为输入框与解析按钮，下方为歌曲信息、播放器、歌词及 JSON 数据区域。
+
+## 🔧 如何更新解析平台页面
+
+### 1. 修改平台卡片（index.php）
+在 `index.php` 的「平台选择」区域（`.platforms` 容器内）添加或修改卡片：
+
+```html
+<div class="pf" data-pf="平台标识" onclick="selectPf('平台标识')">
+  <span class="ico"><!-- 平台图标(SVG/Emoji) --></span>
+  <span class="nm"><span class="dot dot-平台标识"></span>平台名称</span>
+  <span class="ds">平台代号</span>
+</div>
+```
+
+同步在 CSS 中补充对应的圆点颜色，例如：
+```css
+.dot-平台标识{background:#颜色}
+```
+
+### 2. 添加平台识别规则（index.php）
+在 `detectPlatform(url)` 函数中注册该平台的域名匹配：
+
+```js
+if(/平台域名/.test(url)) return '平台标识';
+```
+
+### 3. 编写解析函数（index.php）
+在 JS 中仿照 `parseNetease` / `parseKuwo` / `parseQishui` 新增 `parse平台标识(url)`，并接入主流程：
+
+```js
+if(PLATFORM==='平台标识') norm = await parse平台标识(url);
+```
+
+### 4. 新增后端解析文件
+为平台新建独立的 PHP 解析接口（如 `xxxmusic.php`），返回标准化 JSON，并在前端 `fetch` 调用。参考现有：
+- 网易云：`163music.php`（接口：`163music.php?type=music&url=链接或ID`）
+- 酷我：`kuwo.php`（接口：`kuwo.php?url=播放页链接`）
+- 汽水：`qsmusic.php` + `dymusic.php`（接口：`qsmusic.php?url=分享链接`）
+
+### 5. 纯 ID 快捷解析（index.php）
+若平台支持纯歌曲 ID 输入，在 `doParse()` 中补充构造链接逻辑：
+
+```js
+else if(PLATFORM==='平台标识') url = 'https://平台播放页/'+raw;
+```
+
+> 💡 修改后建议在浏览器中刷新页面验证：切换平台、解析、播放、下载、歌词展示是否全部正常。
 
 ## 📦 安装与部署
 
 ### 1. 下载代码
 
-
-
 ```
-git clone https://github.com/jiuhunwl/music_jx.git
+git clone https://github.com/beihaiBH/music_jx.git
 
 cd music_jx
 ```
+
 ### 2. 直接使用（无需安装）
 
 将 `xxx.php` 上传至 Web 服务器，通过 URL 访问：
@@ -66,4 +135,4 @@ https://api.bugpk.com/api/kuwo?url=https://www.kuwo.cn/play_detail/382383309
 
 **反馈邮箱**：[admin@bugpk.com](mailto:admin@bugpk.com)
 
-**GitHub**：[https://github.com/jiuhunwl](https://github.com/jiuhunwl)
+**GitHub**：[https://github.com/beihaiBH/music_jx](https://github.com/beihaiBH/music_jx)

@@ -52,10 +52,39 @@ function sendRequest($url)
     $result = json_decode($response, true);
 
     if (empty($result) || !isset($result['code']) || $result['code'] !== 200) {
-        throw new Exception("API返回错误: " . ($result['message'] ?? '未知错误'));
+        throw new Exception("API返回错误: " . ($result['message'] ?? $result['msg'] ?? '未知错误'));
     }
 
     return $result;
+}
+
+/**
+ * 发送HTTP请求但不校验业务code（用于歌词等可能无code字段的接口）
+ * @param string $url 请求URL
+ * @return string 原始响应内容
+ */
+function rawRequest($url)
+{
+    global $KUWO_API_HEADERS;
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $KUWO_API_HEADERS);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || empty($response)) {
+        throw new Exception("API请求失败，HTTP状态码: {$httpCode}");
+    }
+
+    return $response;
 }
 
 // 获取并验证参数
@@ -178,9 +207,11 @@ function getMusiurl($songId, $type = 'music')
     $result = sendRequest($apiUrl);
     $url = $result['data']['url'] ?? '';
     if (empty($url)){
-        $apiUrl2 = "https://antiserver.kuwo.cn/anti.s?type=convert_url3&rid={$songId}&format=mp3";
-        $result = json_decode(sendRequest($apiUrl2),true);
-        $url = $result['data']['url'] ?? '';
+        try {
+            $apiUrl2 = "https://antiserver.kuwo.cn/anti.s?type=convert_url3&rid={$songId}&format=mp3";
+            $resp = rawRequest($apiUrl2);
+            if (preg_match('/https?:\/\/[^\s"]+/', $resp, $m)) $url = $m[0];
+        } catch (Exception $e) {}
     }
     return $url;
 }
@@ -193,9 +224,12 @@ function getlyrics($songId)
     $result = sendRequest($lyricsUrl);
     $lyrics = convertLyricsToLrc($result['data']['lrclist'] ?? '');
     if (empty($lyrics)){
-        $apiUrl2 = "https://www.kuwo.cn/newh5/singles/songinfoandlrc?musicId={$songId}";
-        $result = json_decode(sendRequest($apiUrl2),true);
-        $lyrics = convertLyricsToLrc($result['data']['lrclist'] ?? '');
+        try {
+            $apiUrl2 = "https://www.kuwo.cn/newh5/singles/songinfoandlrc?musicId={$songId}";
+            $resp = rawRequest($apiUrl2);
+            $result2 = json_decode($resp, true);
+            $lyrics = convertLyricsToLrc($result2['data']['lrclist'] ?? '');
+        } catch (Exception $e) {}
     }
     return $lyrics;
 }
@@ -228,6 +262,8 @@ function getSongDetails($songId)
 function convertLyricsToLrc($lyricArray)
 {
     $lrcContent = '';
+
+    if (!is_array($lyricArray)) return $lrcContent;
 
     foreach ($lyricArray as $line) {
         if (!isset($line['time']) || !isset($line['lineLyric'])) {
