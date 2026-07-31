@@ -288,7 +288,7 @@ header('Content-Type: text/html; charset=utf-8');
       <button class="btn-parse" id="btnParse" onclick="doParse()">解析</button>
     </div>
     <div class="hint">
-      💡 提示：点击分享复制链接，粘贴此页输入框，即可解析。网易云音乐APP里复制的链接，需要在浏览器打开，再次复制链接粘贴到此页输入框。
+      💡 提示：●点击分享复制链接，粘贴此页输入框，即可解析。网易云音乐APP里复制的链接，需要在浏览器打开，再次复制链接粘贴到此页输入框。<br>●如果下载不了歌曲，到页面最下方原始json中,复制链接。<strong>"url": "链接地址"</strong>
     </div>
   </div>
 
