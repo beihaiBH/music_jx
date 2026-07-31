@@ -284,7 +284,7 @@ header('Content-Type: text/html; charset=utf-8');
   <!-- 输入区 -->
   <div class="input-card">
     <div class="input-row">
-      <input id="inp" type="text" placeholder="粘贴链接或分享文本" autocomplete="off">
+      <input id="inp" type="text" placeholder="粘贴链接或分享文本或歌曲ID" autocomplete="off">
       <button class="btn-parse" id="btnParse" onclick="doParse()">解析</button>
     </div>
     <div class="hint">
